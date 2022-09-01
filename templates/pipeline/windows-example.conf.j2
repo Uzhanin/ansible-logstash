@@ -1,0 +1,30 @@
+input {
+  beats {
+    port => 5044
+    include_codec_tag => false
+  }
+}
+
+filter {
+  grok {
+    match => { "message" => "%{TIMESTAMP_ISO8601:timestamp} %{DATA:sometext}  %{DATA:user} %{SPACE}\[%{LOGLEVEL:level}%{SPACE}\] %{GREEDYDATA:message}" }
+    overwrite => ["message"]
+  }
+  mutate {
+    remove_field => ["[event][original]"]
+  }
+}
+
+output {
+  elasticsearch {
+    hosts => ["https://{{ elastic_hostname }}:9200"]
+    ssl => true
+    cacert => '/usr/share/logstash/config/certs/ca.crt'
+    index => 'windows-example-%{+YYYY.MM.dd}'
+    user => '{{ logstash_writer_user }}'
+    password => '{{ logstash_writer_password }}'
+  }
+#  stdout {
+#     codec => rubydebug
+#  }
+}

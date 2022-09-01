@@ -1,0 +1,8 @@
+---
+- name: Set password for logstash_system user
+  command: |
+    curl -s -X POST --cacert /data/logstash/config/certs/ca.crt -u "elastic:{{ elastic_password }}" -H "Content-Type: application/json" "https://{{ elastic_hostname }}:9200/_security/user/{{ logstash_system_user }}/_password" -d "{\"password\":\"{{ logstash_system_password }}\"}"
+  register: set_pass
+
+- debug: var=set_pass
+

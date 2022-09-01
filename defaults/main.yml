@@ -1,0 +1,10 @@
+---
+logstash_service_name: logstash
+logstash_image_name: logstash:8.3.3
+logstash_system_user: logstash_system
+
+set_logstash_system_password: true
+
+set_logstash_writer: true
+logstash_writer_role: logstash_writer_role
+logstash_writer_user: logstash_writer

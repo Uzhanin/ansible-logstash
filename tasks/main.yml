@@ -1,0 +1,55 @@
+---
+
+- name: Create directories if not exist
+  file:
+    path: /data/logstash/pipeline
+    state: directory
+    mode: '0775'
+
+- name: Copy config files
+  copy:
+    src: '{{ item.src }}'
+    dest: '{{ item.dest }}'
+  with_items:
+    - src: ../../files/certs/ca.crt
+      dest: /data/logstash/config/certs/
+    - src: ./files/config/
+      dest: /data/logstash/config
+
+- name: Configure logstash.yml
+  template:
+    src: logstash.yml.j2
+    dest: /data/logstash/config/logstash.yml
+
+- name: Configure pipelines
+  template:
+    src: '{{ item }}'
+    dest: "/data/logstash/pipeline/{{ item | basename | regex_replace('.j2') }}"
+  with_fileglob:
+    - ../templates/pipeline/*.j2
+
+- include_tasks: logstash_system.yml
+  when: set_logstash_system_password
+
+- include_tasks: logstash_writer.yml
+  when: set_logstash_writer
+  
+- name: Run logstash container
+  docker_container:
+    name: '{{ logstash_service_name }}'
+    image: '{{ logstash_image_name }}'
+    state: started
+    recreate: true
+    restart_policy: always
+    ports:
+      - '5044:5044'
+    volumes:
+      - /data/logstash/config:/usr/share/logstash/config:z
+      - /data/logstash/pipeline:/usr/share/logstash/pipeline:z
+
+- name: Make sure logstash is started
+  wait_for:
+    host: 0.0.0.0
+    port: 5044
+    #delay: 20
+    timeout: 120

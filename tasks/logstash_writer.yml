@@ -1,0 +1,63 @@
+---
+- name: Create role for logstash_writer
+  command: |
+    curl -s -X POST --cacert /data/logstash/config/certs/ca.crt
+    -u "elastic:{{ elastic_password }}"
+    -H "Content-Type: application/json"
+     "https://{{ elastic_hostname }}:9200/_security/role/{{ logstash_writer_role }}"
+     -d "{
+      \"cluster\": [
+        \"monitor\",
+        \"manage_index_templates\",
+        \"manage_ilm\"
+      ],
+      \"indices\": [
+        {
+          \"names\": [
+            \"windows-example*\"
+          ],
+          \"privileges\": [
+            \"write\",
+            \"create\",
+            \"create_index\",
+            \"manage\",
+            \"manage_ilm\"
+          ],
+          \"field_security\": {
+            \"grant\": [
+              \"*\"
+            ]
+          }
+        }
+      ],
+      \"run_as\": [],
+      \"metadata\": {},
+      \"transient_metadata\": {
+        \"enabled\": true
+      }
+    }"
+
+  register: create_role
+
+- debug: var=create_role
+
+- name: Create logstash user
+  command: |
+    curl -s -X POST --cacert /data/logstash/config/certs/ca.crt
+    -u "elastic:{{ elastic_password }}"
+    -H "Content-Type: application/json"
+    "https://{{ elastic_hostname }}:9200/_security/user/{{ logstash_writer_user }}"
+    -d "{
+      \"username\": \"{{ logstash_writer_user }}\",
+      \"roles\": [
+        \"{{ logstash_writer_role }}\"
+      ],
+      \"full_name\": null,
+      \"email\": null,
+      \"password\": \"{{ logstash_writer_password }}\",
+      \"enabled\": true
+    }"
+
+  register: create_user
+
+- debug: var=create_user
